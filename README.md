@@ -14,8 +14,8 @@ Some features implemented in `DynString` are:
   * sub-string
   * string match all
   * char strip
-  * iterators with line and col information 
-  
+  * iterators with line and col information
+
 In the  future the following feature will be added:
 
   * string search and replace
@@ -72,4 +72,23 @@ Original size 48
 > I'm good!
 Hi, how are you?Fine thanks, and you?I'm good! (46)
 
+```
+
+## Testing
+
+Test of the library have been implemented using [minunit](http://www.jera.com/techinfo/jtns/jtn002.html).
+To compile the tests:
+
+```bash
+mkdir build
+cd build
+meson ..
+ninja
+```
+
+Then to execute it:
+
+```bash
+# from inside the build directory
+./test_dynstring
 ```
