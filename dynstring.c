@@ -114,3 +114,145 @@ dynstr_printf  (dynstr     *dst,
   	}
     dynstr_puts(dst, buff);
 }
+
+dyniter*
+dynstr_match   (dynstr     *dst,
+                const char *exp,
+                dyniter    *iter)
+{
+  size_t i = 0;
+  size_t n = strlen(exp);
+
+  if (iter)
+    i = *iter;
+
+  size_t m = dst->size;
+
+  if (m - i > n) {
+    for (; i < m - n; i++)
+    {
+      if (!strncmp(dst->data+i, exp, n))
+      {
+        dyniter * res = malloc(sizeof(dyniter));
+        *res = i;
+        return res;
+      }
+    }
+  }
+  return NULL;
+}
+
+dynstr*
+dynstr_substr  (dynstr     *str,
+                dyniter     a,
+                dyniter     b)
+{
+  size_t n = str->size;
+  if (a > n || a >= b || n == 0) {
+    return NULL;
+  }
+  b = b > n ? n : b;
+  size_t m = b - a;
+  dynstr * res = malloc(sizeof(dynstr));
+  res->data = malloc((m+1)*sizeof(char));
+  res->data[m] = 0;
+  strncpy(res->data, str->data+a, m);
+  res->size = m;
+  return res;
+}
+
+dynstr**
+dynstr_splits  (dynstr     *dst,
+                const char *exp,
+                size_t     *n)
+{
+  size_t k = 0;
+  size_t m = strlen(exp);
+  size_t l = dst->size;
+  dynstr** res=NULL;
+
+  if (l < m || l == 0 || m == 0) {
+    res = malloc(sizeof(dynstr*));
+    res[0] = dst;
+    if (n)
+      *n = 1;
+    return res;
+  }
+
+
+  dyniter str = 0;
+  dyniter *end = NULL;
+  do {
+    end = dynstr_match(dst, exp, &str);
+    if (end) {
+      k ++;
+      res = realloc(res, sizeof(dynstr*)*k);
+      res[k-1] = dynstr_substr(dst, str, *end);
+      str = *end + m;
+      free(end);
+    }
+  } while(end!=NULL && *end <l);
+  if (str < l) {
+    k ++;
+    res = realloc(res, sizeof(dynstr*)*k);
+    res[k-1] = dynstr_substr(dst, str, l);
+  }
+
+  if (n)
+    *n = k;
+  return res;
+}
+
+
+dyniter*
+dynstr_match_all (dynstr     *str,
+                  const char *exp,
+                  size_t     *n)
+{
+  size_t k = 0;
+  size_t m = strlen(exp);
+  size_t l = str->size;
+  dyniter* res=NULL;
+
+  if (l < m || l == 0 || m == 0) {
+    if (n)
+      *n = 0;
+    return res;
+  }
+
+  dyniter it = 0;
+  dyniter *end = NULL;
+  do {
+    end = dynstr_match(str, exp, &it);
+    if (end)
+    {
+      k++;
+      res = realloc(res, sizeof(dyniter)*k);
+      res[k-1] = *end;
+      it = *end + m;
+      free(end);
+    }
+  } while(end != NULL && *end < l);
+  if (n)
+    *n = k;
+  return res;
+}
+
+
+void
+dynstr_strip     (dynstr     *dst,
+                  char        trg)
+{
+  size_t i = 0;
+  char *pr = dst->data, *pw = dst->data;
+  while (*pr) {
+    *pw = *pr++;
+    if (*pw == trg){
+      i++;
+    }
+    pw += (*pw != trg);
+  }
+  *pw = '\0';
+  dst->data = realloc(dst->data, dst->size - i + 1);
+  dst->size -= i;
+}
