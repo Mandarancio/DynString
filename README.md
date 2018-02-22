@@ -5,7 +5,7 @@ Dynamic String in `C`.
 
 Some features implemented in `DynString` are:
 
-  * fully dynamic string size
+  * fully dynamic string size (with buffer size multple of 256 bytes)
   * `sprintf` like syntax: `dynstr_printf(...)`
   * `puts` like syntax
   * compare between `dynstr` and `dynstr` or `dynstr` and `char*`
@@ -14,12 +14,12 @@ Some features implemented in `DynString` are:
   * sub-string
   * string match all
   * char strip
-
+  * iterators with line and col information 
+  
 In the  future the following feature will be added:
 
   * string search and replace
   * regex support
-  * iterator with row+line+char counter
 
 ## Project import
 
