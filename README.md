@@ -46,7 +46,7 @@ int main(int    argc,
 	dynstr* str = dynstr_from("Hi, how are you?\nFine thanks, and you?\nI'm good!");
 	printf("Original size %lu\n", str->size);
 
-    /**Split in lines**/
+	/**Split in lines**/
 	size_t n;
 	dynstr** lines = dynstr_splits(str, "\n", &n);
 	printf("%lu lines\n", n);
