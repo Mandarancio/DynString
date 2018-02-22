@@ -1,5 +1,6 @@
 #include "dynstring.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,6 +18,8 @@ dynstr_new     (void)
 dynstr*
 dynstr_from    (const char *src)
 {
+  assert(src);
+
   size_t n = strlen(src);
 
   dynstr * res = malloc(sizeof(dynstr));
@@ -28,12 +31,34 @@ dynstr_from    (const char *src)
   return res;
 }
 
+dynstr*
+dynstr_copy      (dynstr *src)
+{
+  assert(src);
+
+  dynstr * res = malloc(sizeof(dynstr));
+  res->data = malloc(sizeof(char)*(1+src->size));
+  res->data[src->size] = 0;
+  memcpy(res->data, src->data, src->size);
+  res->size = src->size;
+  return res;
+}
+
+void
+dynstr_free      (dynstr     *str)
+{
+  assert(str);
+  free(str->data);
+  free(str);
+  str = NULL;
+}
 
 void
 dynstr_puts_n  (dynstr     *dst,
                 const char *src,
                 size_t      n)
 {
+  assert(dst);
   if (n)
   {
     size_t m = dst->size;
@@ -48,13 +73,15 @@ void
 dynstr_puts    (dynstr     *dst,
                 const char *src)
 {
+  assert(dst && src);
   size_t n = strlen(src);
   dynstr_puts_n(dst, src, n);
 }
 
-void    dynstr_cnct    (dynstr     *dst,
-                        dynstr     *src)
+void    dynstr_dynstr_concat (dynstr     *dst,
+                              dynstr     *src)
 {
+  assert(dst && src);
   size_t n = src->size;
   dynstr_puts_n(dst, src->data, n);
 }
@@ -63,6 +90,7 @@ int
 dynstr_cmpr    (dynstr     *a,
                 dynstr     *b)
 {
+  assert(a && b);
   if (a->size != b->size)
   {
     return (int)a->size - (int)b->size;
@@ -75,13 +103,21 @@ dynstr_cmpr    (dynstr     *a,
 size_t
 dynstr_len     (dynstr     *str)
 {
+  assert(str);
   return str->size;
+}
+char*
+dynstr_cstr      (dynstr     *str)
+{
+  assert(str);
+  return str->data;
 }
 
 int
 dynstr_scmpr   (dynstr     *a,
                 const char *b)
 {
+  assert(a && b);
   return strcmp(a->data, b);
 }
 
@@ -90,6 +126,7 @@ dynstr_cmpr_at (dynstr     *a,
                 const char *b,
                 dyniter     iter)
 {
+  assert(a && b);
   if (iter > a->size)
     return -1;
   return strcmp(a->data + iter, b);
@@ -100,19 +137,21 @@ dynstr_printf  (dynstr     *dst,
                 const char *fmt,
                 ...)
 {
-    va_list ap;
-  	int n;
-    char buff[1024];
-  	va_start(ap, fmt);
+  assert(dst && fmt);
 
-  	n = vsnprintf(buff, 1024, fmt, ap);
+  va_list ap;
+  int n;
+  char buff[1024];
+  va_start(ap, fmt);
 
-  	va_end(ap);
+  n = vsnprintf(buff, 1024, fmt, ap);
 
-  	if (n < 0) {
-      	return;
-  	}
-    dynstr_puts(dst, buff);
+  va_end(ap);
+
+  if (n < 0) {
+  	return;
+  }
+  dynstr_puts(dst, buff);
 }
 
 dyniter*
@@ -120,6 +159,7 @@ dynstr_match   (dynstr     *dst,
                 const char *exp,
                 dyniter    *iter)
 {
+  assert(dst && exp);
   size_t i = 0;
   size_t n = strlen(exp);
 
@@ -147,6 +187,7 @@ dynstr_substr  (dynstr     *str,
                 dyniter     a,
                 dyniter     b)
 {
+  assert(str);
   size_t n = str->size;
   if (a > n || a >= b || n == 0) {
     return NULL;
@@ -166,6 +207,7 @@ dynstr_splits  (dynstr     *dst,
                 const char *exp,
                 size_t     *n)
 {
+  assert(dst && exp);
   size_t k = 0;
   size_t m = strlen(exp);
   size_t l = dst->size;
@@ -209,6 +251,7 @@ dynstr_match_all (dynstr     *str,
                   const char *exp,
                   size_t     *n)
 {
+  assert(str && exp);
   size_t k = 0;
   size_t m = strlen(exp);
   size_t l = str->size;
@@ -243,6 +286,7 @@ void
 dynstr_strip     (dynstr     *dst,
                   char        trg)
 {
+  assert(dst);
   size_t i = 0;
   char *pr = dst->data, *pw = dst->data;
   while (*pr) {
