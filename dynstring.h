@@ -57,6 +57,9 @@ dynstr*  dynstr_substr    (dynstr     *str,
 dynstr** dynstr_splits    (dynstr     *dst,
                            const char *exp,
                            size_t     *n);
+dynstr** dynstr_splitc    (dynstr     *dst,
+                           char        exp,
+                           size_t     *n);
 
 /** String manipulation functions **/
 void     dynstr_strip     (dynstr     *dst,

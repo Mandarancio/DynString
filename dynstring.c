@@ -281,6 +281,43 @@ dynstr_match_all (dynstr     *str,
   return res;
 }
 
+dynstr**
+dynstr_splitc    (dynstr     *dst,
+                  char        trg,
+                  size_t     *n)
+{
+  assert(dst);
+  dyniter it;
+  dyniter last = 0;
+  size_t l = dst->size;
+
+  if (!l) {
+    if (n)
+      *n = 0;
+    return NULL;
+  }
+
+  dynstr** res = NULL;
+  size_t k = 0;
+  for (it = 0; it < l; it++) {
+    if (dst->data[it] == trg) {
+      k ++;
+      res = realloc(res, k * sizeof(dynstr*));
+      res[k-1] = dynstr_substr(dst, last, it);
+      last = it + 1;
+    }
+  }
+  if (last < l) {
+    k++;
+    res = realloc(res, k * sizeof(dynstr*));
+    res[k-1] = dynstr_substr(dst, last, l);
+  }
+  if (n)
+    *n = k;
+  return res;
+}
+
+
 
 void
 dynstr_strip     (dynstr     *dst,

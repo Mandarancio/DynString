@@ -9,7 +9,7 @@ Some features implemented in `DynString` are:
   * `sprintf` like syntax: `dynstr_printf(...)`
   * `puts` like syntax
   * compare between `dynstr` and `dynstr` or `dynstr` and `char*`
-  * string splits
+  * string splits (with char or string match)
   * string match
   * sub-string
   * string match all
@@ -48,7 +48,7 @@ int main(int    argc,
 
 	/**Split in lines**/
 	size_t n;
-	dynstr** lines = dynstr_splits(str, "\n", &n);
+	dynstr** lines = dynstr_splitc(str, '\n', &n);
 	printf("%lu lines\n", n);
 	size_t i;
 	for (i = 0; i < n; i++)
