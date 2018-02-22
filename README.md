@@ -6,7 +6,7 @@ Dynamic String in `C`.
 Some features implemented in `DynString` are:
 
   * fully dynamic string size
-  * `printf` like syntax
+  * `sprintf` like syntax: `dynstr_printf(...)`
   * `puts` like syntax
   * compare between `dynstr` and `dynstr` or `dynstr` and `char*`
   * string splits
