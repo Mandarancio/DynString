@@ -2,6 +2,8 @@
 #define __DYNSTRING_H__
 #include <string.h>
 
+#define BUFFER 256
+
 struct dynstr {
   size_t  size;
   size_t  r_size;

@@ -5,8 +5,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define BUFFER 256
-
 dynstr*
 dynstr_new     (void)
 {
