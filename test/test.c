@@ -49,17 +49,43 @@ static char * test_from_size() {
 static char * test_eq() {
   const char text[128] = "hello world!";
   dynstr * a = dynstr_from(text);
-  dynstr * b = dynstr_from(text);
+  dynstr * b = dynstr_new();
+  dynstr_puts(b, text);
   mu_assert("error, a != b", eq(a, b));
   dynstr_free(a);
   dynstr_free(b);
   return 0;
 }
 
+static char * test_eq_size() {
+  const char text[128] = "hello world!";
+  dynstr * a = dynstr_from(text);
+  dynstr * b = dynstr_new();
+  dynstr_puts(b, text);
+  mu_assert("error, a != b", a->size == b->size);
+  dynstr_free(a);
+  dynstr_free(b);
+  return 0;
+}
+
+static char * test_eq_buff_size() {
+  const char text[128] = "hello world!";
+  dynstr * a = dynstr_from(text);
+  dynstr * b = dynstr_new();
+  dynstr_puts(b, text);
+  mu_assert("error, a != b", a->r_size == b->r_size);
+  dynstr_free(a);
+  dynstr_free(b);
+  return 0;
+}
+
+
 static char * all_tests() {
     mu_run_test(test_from);
     mu_run_test(test_from_size);
     mu_run_test(test_eq);
+    mu_run_test(test_eq_size);
+    mu_run_test(test_eq_buff_size);
     return 0;
 }
 
