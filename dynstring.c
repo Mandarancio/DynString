@@ -5,13 +5,31 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define BUFFER 256
+
 dynstr*
 dynstr_new     (void)
 {
   dynstr * res = malloc(sizeof(dynstr));
-  res->data = malloc(sizeof(char));
+  assert(res);
+  res->data = malloc(BUFFER);
+  assert(res->data);
   res->data[0] = 0;
   res->size = 0;
+  res->r_size = BUFFER;
+  return res;
+}
+
+dynstr*
+dynstr_new_size (size_t n)
+{
+  dynstr * res = malloc(sizeof(dynstr));
+  assert(res);
+  res->data = malloc(n);
+  assert(res->data);
+  res->data[0] = 0;
+  res->size = 0;
+  res->r_size = n;
   return res;
 }
 
@@ -20,13 +38,13 @@ dynstr_from    (const char *src)
 {
   assert(src);
 
-  size_t n = strlen(src);
+  size_t n = strlen(src) + 1;
+  size_t t = n + (BUFFER - (n % BUFFER));
 
-  dynstr * res = malloc(sizeof(dynstr));
-  res->data = malloc((n+1)*sizeof(char));
-  res->data[n] = 0;
+  dynstr * res =  dynstr_new_size(t);
+  res->data[n-1] = 0;
   memcpy(res->data, src, n);
-  res->size = n;
+  res->size = n-1;
 
   return res;
 }
@@ -37,10 +55,15 @@ dynstr_copy      (dynstr *src)
   assert(src);
 
   dynstr * res = malloc(sizeof(dynstr));
-  res->data = malloc(sizeof(char)*(1+src->size));
+  assert(res);
+
+  res->data = malloc(src->r_size);
+  assert(res->data);
+
   res->data[src->size] = 0;
   memcpy(res->data, src->data, src->size);
   res->size = src->size;
+  res->r_size = res->r_size;
   return res;
 }
 
@@ -54,6 +77,29 @@ dynstr_free      (dynstr     *str)
 }
 
 void
+dynstr_grow    (dynstr     *str,
+                size_t      n)
+{
+  assert(str);
+  str->data = realloc(str->data, str->r_size + n);
+  str->r_size += n;
+  assert(str->data);
+}
+
+void
+dynstr_dgrow      (dynstr     *str,
+                   size_t      n)
+{
+  assert(str);
+  size_t m = str->r_size - str->size;
+  if (m <= n + 1) {
+    size_t t = str->size + n - m + 1;
+    size_t mem = t + (BUFFER - (t % BUFFER));
+    dynstr_grow(str, mem - str->r_size);
+  }
+}
+
+void
 dynstr_puts_n  (dynstr     *dst,
                 const char *src,
                 size_t      n)
@@ -62,7 +108,7 @@ dynstr_puts_n  (dynstr     *dst,
   if (n)
   {
     size_t m = dst->size;
-    dst->data = realloc(dst->data, m + n + 1);
+    dynstr_dgrow(dst, n);
     dst->data[m+n] = 0;
     memcpy(dst->data+m, src, n);
     dst->size += n;
@@ -202,7 +248,9 @@ dynstr_substr_s  (dynstr     *str,
   b = b > n ? n : b;
   size_t m = b - a;
   dynstr * res = malloc(sizeof(dynstr));
-  res->data = malloc((m+1)*sizeof(char));
+  assert(res);
+  res->data = malloc(m+1);
+  assert(res->data);
   res->data[m] = 0;
   strncpy(res->data, str->data + a, m);
   res->size = m;
@@ -222,6 +270,8 @@ dynstr_splits  (dynstr     *dst,
 
   if (l < m || l == 0 || m == 0) {
     res = malloc(sizeof(dynstr*));
+    assert(res);
+
     res[0] = dst;
     if (n)
       *n = 1;
@@ -236,6 +286,8 @@ dynstr_splits  (dynstr     *dst,
     if (end) {
       k ++;
       res = realloc(res, sizeof(dynstr*)*k);
+      assert(res);
+
       res[k-1] = dynstr_substr(dst, *str, *end);
       free(str);
       str = end;
@@ -245,6 +297,8 @@ dynstr_splits  (dynstr     *dst,
   if (str->i < l) {
     k ++;
     res = realloc(res, sizeof(dynstr*)*k);
+    assert(res);
+
     res[k-1] = dynstr_substr_s(dst, str->i, l);
   }
   free(str);
@@ -279,13 +333,15 @@ dynstr_match_all (dynstr     *str,
     {
       k++;
       res = realloc(res, sizeof(dyniter)*k);
+      assert(res);
+
       res[k-1] = *end;
       free(it);
       it = end;
       dyniter_skip(it, m);
     }
   } while(end != NULL && end->i < l);
-  if(end)
+  if(end && end != it)
     free(end);
   free(it);
   if (n)
@@ -316,6 +372,8 @@ dynstr_splitc    (dynstr     *dst,
     if (dyniter_at(*it) == trg) {
       k ++;
       res = realloc(res, k * sizeof(dynstr*));
+      assert(res);
+
       res[k-1] = dynstr_substr(dst, *last, *it);
       *last = *it;
       dyniter_next(last);
@@ -324,6 +382,8 @@ dynstr_splitc    (dynstr     *dst,
   if (last->i < l) {
     k++;
     res = realloc(res, k * sizeof(dynstr*));
+    assert(res);
+
     res[k-1] = dynstr_substr_s(dst, last->i, l);
   }
   free(it);
@@ -342,7 +402,8 @@ dynstr_strip     (dynstr     *dst,
   assert(dst);
   size_t i = 0;
   char *pr = dst->data, *pw = dst->data;
-  while (*pr) {
+  size_t j;
+  for (j = 0; j < dst->size; j ++) {
     *pw = *pr++;
     if (*pw == trg){
       i++;
@@ -350,8 +411,10 @@ dynstr_strip     (dynstr     *dst,
     pw += (*pw != trg);
   }
   *pw = '\0';
-  dst->data = realloc(dst->data, dst->size - i + 1);
+  dst->data = realloc(dst->data, dst->r_size - i + 1);
+  assert(dst->data);
   dst->size -= i;
+  dst->r_size -= i;
 }
 
 
@@ -361,6 +424,7 @@ dyniter*
 dyniter_new      (void)
 {
   dyniter * it = malloc(sizeof(dyniter));
+  assert(it);
   it->i = 0;
   it->column = 0;
   it->line = 0;
@@ -480,7 +544,8 @@ dyniter_skip     (dyniter    *it,
 char*
 dyniter_print    (dyniter    it)
 {
-  char * buff = malloc(256 * sizeof(char));
+  char * buff = malloc(256);
+  assert(buff);
   sprintf(buff, "pos %lu, line %lu, col %lu", it.i, it.line, it.column);
   return buff;
 }

@@ -4,6 +4,7 @@
 
 struct dynstr {
   size_t  size;
+  size_t  r_size;
   char   *data;
 } typedef dynstr;
 
@@ -21,11 +22,18 @@ enum ds_bool {
 
 /** constructors functions **/
 dynstr*  dynstr_new        (void);
+dynstr*  dynstr_new_size   (size_t      size);
 dynstr*  dynstr_from       (const char *src);
-dynstr*  dynstr_copy       (dynstr *src);
+dynstr*  dynstr_copy       (dynstr     *src);
 
 /** destructor function **/
 void     dynstr_free       (dynstr     *str);
+
+/** mem utility **/
+void     dynstr_grow       (dynstr     *str,
+                            size_t      n);
+void     dynstr_dgrow      (dynstr     *str,
+                            size_t      n);
 
 
 /** data access functions **/
