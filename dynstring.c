@@ -127,9 +127,9 @@ dynstr_cmpr_at (dynstr     *a,
                 dyniter     iter)
 {
   assert(a && b);
-  if (iter > a->size)
+  if (iter.i > a->size)
     return -1;
-  return strcmp(a->data + iter, b);
+  return strcmp(a->data + iter.i, b);
 }
 
 void
@@ -160,25 +160,24 @@ dynstr_match   (dynstr     *dst,
                 dyniter    *iter)
 {
   assert(dst && exp);
-  size_t i = 0;
   size_t n = strlen(exp);
-
-  if (iter)
-    i = *iter;
-
+  dyniter * res = dynstr_iter(dst);
+  if (iter){
+    *res = *iter;
+  }
   size_t m = dst->size;
 
-  if (m - i > n) {
-    for (; i < m - n; i++)
+  if (m - res->i > n) {
+
+    for (; res->i < m - n; dyniter_next(res))
     {
-      if (!strncmp(dst->data+i, exp, n))
+      if (!strncmp(dst->data+res->i, exp, n))
       {
-        dyniter * res = malloc(sizeof(dyniter));
-        *res = i;
         return res;
       }
     }
   }
+  free(res);
   return NULL;
 }
 
@@ -186,6 +185,14 @@ dynstr*
 dynstr_substr  (dynstr     *str,
                 dyniter     a,
                 dyniter     b)
+{
+  return dynstr_substr_s(str, a.i, b.i);
+}
+
+dynstr*
+dynstr_substr_s  (dynstr     *str,
+                  size_t      a,
+                  size_t      b)
 {
   assert(str);
   size_t n = str->size;
@@ -197,7 +204,7 @@ dynstr_substr  (dynstr     *str,
   dynstr * res = malloc(sizeof(dynstr));
   res->data = malloc((m+1)*sizeof(char));
   res->data[m] = 0;
-  strncpy(res->data, str->data+a, m);
+  strncpy(res->data, str->data + a, m);
   res->size = m;
   return res;
 }
@@ -222,24 +229,25 @@ dynstr_splits  (dynstr     *dst,
   }
 
 
-  dyniter str = 0;
+  dyniter *str = dynstr_iter(dst);
   dyniter *end = NULL;
   do {
-    end = dynstr_match(dst, exp, &str);
+    end = dynstr_match(dst, exp, str);
     if (end) {
       k ++;
       res = realloc(res, sizeof(dynstr*)*k);
-      res[k-1] = dynstr_substr(dst, str, *end);
-      str = *end + m;
-      free(end);
+      res[k-1] = dynstr_substr(dst, *str, *end);
+      free(str);
+      str = end;
+      dyniter_skip(str, m);
     }
-  } while(end!=NULL && *end <l);
-  if (str < l) {
+  } while(end!=NULL && end->i < l);
+  if (str->i < l) {
     k ++;
     res = realloc(res, sizeof(dynstr*)*k);
-    res[k-1] = dynstr_substr(dst, str, l);
+    res[k-1] = dynstr_substr_s(dst, str->i, l);
   }
-
+  free(str);
   if (n)
     *n = k;
   return res;
@@ -263,19 +271,23 @@ dynstr_match_all (dynstr     *str,
     return res;
   }
 
-  dyniter it = 0;
+  dyniter *it = dynstr_iter(str);
   dyniter *end = NULL;
   do {
-    end = dynstr_match(str, exp, &it);
+    end = dynstr_match(str, exp, it);
     if (end)
     {
       k++;
       res = realloc(res, sizeof(dyniter)*k);
       res[k-1] = *end;
-      it = *end + m;
-      free(end);
+      free(it);
+      it = end;
+      dyniter_skip(it, m);
     }
-  } while(end != NULL && *end < l);
+  } while(end != NULL && end->i < l);
+  if(end)
+    free(end);
+  free(it);
   if (n)
     *n = k;
   return res;
@@ -287,8 +299,7 @@ dynstr_splitc    (dynstr     *dst,
                   size_t     *n)
 {
   assert(dst);
-  dyniter it;
-  dyniter last = 0;
+
   size_t l = dst->size;
 
   if (!l) {
@@ -297,21 +308,26 @@ dynstr_splitc    (dynstr     *dst,
     return NULL;
   }
 
+  dyniter *it = dynstr_iter(dst);
+  dyniter *last = dynstr_iter(dst);
   dynstr** res = NULL;
   size_t k = 0;
-  for (it = 0; it < l; it++) {
-    if (dst->data[it] == trg) {
+  do {
+    if (dyniter_at(*it) == trg) {
       k ++;
       res = realloc(res, k * sizeof(dynstr*));
-      res[k-1] = dynstr_substr(dst, last, it);
-      last = it + 1;
+      res[k-1] = dynstr_substr(dst, *last, *it);
+      *last = *it;
+      dyniter_next(last);
     }
-  }
-  if (last < l) {
+  } while (dyniter_next(it));
+  if (last->i < l) {
     k++;
     res = realloc(res, k * sizeof(dynstr*));
-    res[k-1] = dynstr_substr(dst, last, l);
+    res[k-1] = dynstr_substr_s(dst, last->i, l);
   }
+  free(it);
+  free(last);
   if (n)
     *n = k;
   return res;
@@ -336,4 +352,86 @@ dynstr_strip     (dynstr     *dst,
   *pw = '\0';
   dst->data = realloc(dst->data, dst->size - i + 1);
   dst->size -= i;
+}
+
+
+/** Iter function **/
+
+dyniter*
+dyniter_new      (void)
+{
+  dyniter * it = malloc(sizeof(dyniter));
+  it->i = 0;
+  it->column = 0;
+  it->line = 0;
+  it->__src__ = NULL;
+  return it;
+}
+dyniter*
+dynstr_iter      (dynstr     *src)
+{
+  dyniter * it = dyniter_new();
+  it->__src__ = src;
+  return it;
+}
+
+void
+dyniter_free     (dyniter    *iter)
+{
+  iter->__src__  = NULL;
+  free(iter);
+}
+
+ds_bool
+dyniter_next     (dyniter    *it)
+{
+  assert(it && it->__src__);
+  dynstr * str = it->__src__;
+  if (it->i < str->size - 1)
+  {
+    if (str->data[it->i] == '\n') {
+      it->line ++;
+      it->column = 0;
+    } else {
+      it->column ++;
+    }
+    it->i ++;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+ds_bool
+dyniter_at_end   (dyniter    *it)
+{
+  assert(it && it->__src__);
+  return (it->i == it->__src__->size - 1);
+}
+
+size_t
+dyniter_skip     (dyniter    *it,
+                  size_t      n)
+{
+  assert(it);
+  size_t i;
+  for (i = 0; i < n; i++) {
+    if (!dyniter_next(it)) {
+      break;
+    }
+  }
+  return i;
+}
+
+char*
+dyniter_print    (dyniter    it)
+{
+  char * buff = malloc(256 * sizeof(char));
+  sprintf(buff, "pos %lu, line %lu, col %lu", it.i, it.line, it.column);
+  return buff;
+}
+char
+dyniter_at       (dyniter     it)
+{
+  assert(it.__src__);
+  return it.__src__->data[it.i];
 }
