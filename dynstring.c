@@ -375,6 +375,61 @@ dynstr_iter      (dynstr     *src)
   return it;
 }
 
+dyniter*
+dynstr_iter_at   (dynstr     *src,
+                  size_t      pos)
+{
+  assert(src && src->size > pos);
+  dyniter * r = dynstr_iter(src);
+  dyniter_skip(r, pos);
+  return r;
+}
+
+dyniter*
+dynstr_iter_line (dynstr     *src,
+                  size_t      line)
+{
+  assert(src);
+  dyniter * it = dynstr_iter(src);
+  if (line)
+  {
+    do {
+      if (it->line == line)
+        break;
+    } while(dyniter_next(it));
+    if (it->line != line)
+    {
+      dyniter_free(it);
+      return NULL;
+    }
+  }
+  return it;
+}
+
+dyniter*
+dynstr_iter_pos  (dynstr     *src,
+                  size_t      line,
+                  size_t      col)
+{
+  assert(src);
+  dyniter * it = dynstr_iter(src);
+  if (line)
+  {
+    do {
+      if (it->line == line && it->column == col)
+        break;
+      if (it->line > line)
+        break;
+    } while(dyniter_next(it));
+    if (it->line != line || it->column != col)
+    {
+      dyniter_free(it);
+      return NULL;
+    }
+  }
+  return it;
+}
+
 void
 dyniter_free     (dyniter    *iter)
 {
@@ -434,4 +489,54 @@ dyniter_at       (dyniter     it)
 {
   assert(it.__src__);
   return it.__src__->data[it.i];
+}
+
+ds_bool
+dyniter_goto     (dyniter    *it,
+                  size_t      n)
+{
+  assert(it && it->__src__);
+  if (n < it->__src__->size)
+  {
+    if (n < it->i){
+      dyniter * b = dynstr_iter_at(it->__src__, n);
+      *it = *b;
+      free(b);
+    } else {
+      dyniter_skip(it, n - it->i);
+    }
+    return TRUE;
+  }
+  return FALSE;
+}
+
+ds_bool
+dyniter_go_line  (dyniter    *it,
+                  size_t      line)
+{
+  assert(it && it->__src__);
+  dyniter * b = dynstr_iter_line(it->__src__, line);
+  if (b)
+  {
+    *it = *b;
+    free(b);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+ds_bool
+dyniter_go_pos   (dyniter    *it,
+                  size_t      line,
+                  size_t      col)
+{
+  assert(it && it->__src__);
+  dyniter * b = dynstr_iter_pos(it->__src__, line, col);
+  if (b)
+  {
+    *it = *b;
+    free(b);
+    return TRUE;
+  }
+  return FALSE;
 }

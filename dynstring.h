@@ -82,10 +82,25 @@ void     dynstr_strip     (dynstr     *dst,
 /** Iter function **/
 dyniter* dyniter_new      (void);
 dyniter* dynstr_iter      (dynstr     *src);
+dyniter* dynstr_iter_at   (dynstr     *src,
+                           size_t      pos);
+dyniter* dynstr_iter_line (dynstr     *src,
+                           size_t      line);
+dyniter* dynstr_iter_pos  (dynstr     *src,
+                           size_t      line,
+                           size_t      col);
 
 void     dyniter_free     (dyniter    *iter);
 
 char     dyniter_at       (dyniter     it);
+
+ds_bool  dyniter_goto     (dyniter    *it,
+                           size_t      n);
+ds_bool  dyniter_go_line  (dyniter    *it,
+                           size_t      line);
+ds_bool  dyniter_go_pos   (dyniter    *it,
+                           size_t      line,
+                           size_t      col);
 
 ds_bool  dyniter_next     (dyniter    *it);
 ds_bool  dyniter_at_end   (dyniter    *it);
