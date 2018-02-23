@@ -93,6 +93,9 @@ dynstr** dynstr_splitc     (dynstr     *dst,
 /** String manipulation functions **/
 void     dynstr_strip     (dynstr     *dst,
                            char        trg);
+void     dynstr_replace_c (dynstr     *dst,
+                           char        trg,
+                           char        src);
 
 /** Iter function **/
 dyniter* dyniter_new      (void);
