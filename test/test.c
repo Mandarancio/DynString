@@ -48,7 +48,7 @@ END_TEST
 
 START_TEST(test_substr)
   dynstr * var = dynstr_from("hello world!");
-  dynstr * substr = dynstr_substr_s(var, 0, 5);
+  dynstr * substr = dynstr_substr_s(var, 0, 4);
   ck_assert_str_eq(substr->data, "hello");
   dynstr_free(var);
   dynstr_free(substr);
@@ -56,7 +56,7 @@ END_TEST
 
 START_TEST(test_substr_2)
   dynstr * var = dynstr_from("hello world!");
-  dynstr * substr = dynstr_substr_s(var, 6, 11);
+  dynstr * substr = dynstr_substr_s(var, 6, 10);
   ck_assert_str_eq(substr->data, "world");
   dynstr_free(var);
   dynstr_free(substr);

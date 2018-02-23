@@ -17,6 +17,11 @@ struct dyniter {
   dynstr *__src__;
 } typedef dyniter;
 
+struct dynrange {
+  dyniter start;
+  dyniter end;
+} typedef dynrange;
+
 enum ds_bool {
   FALSE = 0,
   TRUE  = 1
@@ -72,12 +77,12 @@ dyniter*  dynstr_match_all (dynstr     *str,
                             size_t     *n);
 
 /** Extraction functions **/
-dynstr*  dynstr_substr     (dynstr     *str,
-                            dyniter     a,
+dynstr*  dynstr_substr     (dyniter     a,
                             dyniter     b);
 dynstr*  dynstr_substr_s   (dynstr     *str,
                             size_t      a,
                             size_t      b);
+dynstr*  dynstr_substr_r   (dynrange    range);
 dynstr** dynstr_splits     (dynstr     *dst,
                             const char *exp,
                             size_t     *n);
@@ -91,6 +96,7 @@ void     dynstr_strip     (dynstr     *dst,
 
 /** Iter function **/
 dyniter* dyniter_new      (void);
+dyniter* dyniter_copy     (dyniter    *iter);
 dyniter* dynstr_iter      (dynstr     *src);
 dyniter* dynstr_iter_at   (dynstr     *src,
                            size_t      pos);
@@ -111,8 +117,10 @@ ds_bool  dyniter_go_line  (dyniter    *it,
 ds_bool  dyniter_go_pos   (dyniter    *it,
                            size_t      line,
                            size_t      col);
+void     dyniter_end_line (dyniter    *it);
 
 ds_bool  dyniter_next     (dyniter    *it);
+ds_bool  dyniter_prev     (dyniter    *it);
 ds_bool  dyniter_at_end   (dyniter    *it);
 size_t   dyniter_skip     (dyniter    *it,
                            size_t      n);

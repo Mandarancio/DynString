@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define PREVIEW 15
+
 dynstr*
 dynstr_new     (void)
 {
@@ -234,13 +236,19 @@ dynstr_match   (dynstr     *dst,
 }
 
 dynstr*
-dynstr_substr  (dynstr     *str,
-                dyniter     a,
+dynstr_substr  (dyniter     a,
                 dyniter     b)
 {
-  return dynstr_substr_s(str, a.i, b.i);
+  return dynstr_substr_s(a.__src__, a.i, b.i);
 }
 
+dynstr*
+dynstr_substr_r   (dynrange    range)
+{
+  if (range.end.i >= range.start.i)
+    return dynstr_substr(range.start, range.end);
+  return dynstr_substr(range.end, range.start);
+}
 dynstr*
 dynstr_substr_s  (dynstr     *str,
                   size_t      a,
@@ -249,12 +257,12 @@ dynstr_substr_s  (dynstr     *str,
   assert(str);
 
   size_t n = str->size;
-  if (a > n || a >= b || n == 0) {
+  if (a > n || a >= b+1 || n == 0) {
     fprintf(stderr, "SUBSTR: syntax wrong (a > n || a >= b || n == 0)\n");
     return NULL;
   }
 
-  b = b > n ? n : b;
+  b = b+1 > n ? n : b+1;
   size_t m = b - a;
 
   dynstr  * r = dynstr_new_size(m);
@@ -296,7 +304,7 @@ dynstr_splits  (dynstr     *dst,
       res = realloc(res, sizeof(dynstr*)*k);
       assert(res);
 
-      res[k-1] = dynstr_substr(dst, *str, *end);
+      res[k-1] = dynstr_substr_s(dst, str->i, end->i-1);
       free(str);
       str = end;
       dyniter_skip(str, m);
@@ -383,7 +391,7 @@ dynstr_splitc    (dynstr     *dst,
       res = realloc(res, k * sizeof(dynstr*));
       assert(res);
 
-      res[k-1] = dynstr_substr(dst, *last, *it);
+      res[k-1] = dynstr_substr_s(dst, last->i, it->i-1);
       *last = *it;
       dyniter_next(last);
     }
@@ -425,14 +433,26 @@ dynstr_strip     (dynstr     *dst,
   dst->size -= i;
   dst->r_size -= i;
 }
-
+void
+dynstr_replace_c (dynstr     *dst,
+                  char        trg,
+                  char        src)
+{
+  assert(dst && dst->data);
+  size_t i;
+  for (i = 0; i < dst->size; i ++) {
+    if (dst->data[i] == trg){
+      dst->data[i] = src;
+    }
+  }
+}
 
 /** Iter function **/
 
 dyniter*
 dyniter_new      (void)
 {
-  dyniter * it = malloc(sizeof(dyniter));
+  dyniter * it = malloc(sizeof *it);
   assert(it);
   it->i = 0;
   it->column = 0;
@@ -440,6 +460,15 @@ dyniter_new      (void)
   it->__src__ = NULL;
   return it;
 }
+
+dyniter*
+dyniter_copy     (dyniter    *iter)
+{
+  dyniter * res = dyniter_new();
+  *res = *iter;
+  return res;
+}
+
 dyniter*
 dynstr_iter      (dynstr     *src)
 {
@@ -534,6 +563,35 @@ dyniter_next     (dyniter    *it)
 }
 
 ds_bool
+dyniter_prev (dyniter    *it)
+{
+  assert(it && it->__src__);
+  if (it->i > 0){
+    dynstr * str = it->__src__;
+    it->i --;
+    if (str->data[it->i] == '\n') {
+      it->line --;
+      if (it->i) {
+        size_t i;
+        size_t n = 1;
+        for (i = it->i-1; i >0; i--) {
+          if (str->data[i] == '\n')
+            break;
+          n++;
+        }
+        it->column = i;
+      } else {
+        it->column = 0;
+      }
+    }
+    else {
+      it->column --;
+    }
+  }
+  return FALSE;
+}
+
+ds_bool
 dyniter_at_end   (dyniter    *it)
 {
   assert(it && it->__src__);
@@ -611,6 +669,16 @@ dyniter_go_pos   (dyniter    *it,
   return FALSE;
 }
 
+void
+dyniter_end_line (dyniter    *it)
+{
+  assert(it);
+  do {
+    if (dyniter_at(*it) == '\n')
+      return;
+  } while (dyniter_next(it));
+  return;
+}
 
 char*
 dyniter_print    (dyniter    it)
@@ -621,11 +689,24 @@ dyniter_print    (dyniter    it)
   return buff;
 }
 
-char*    dynstr_print     (dynstr     *str)
+char*
+dynstr_print     (dynstr     *str)
 {
   assert(str);
-  char * buff = malloc((256+str->size)*sizeof(char));
+  size_t n = str->size;
+  dynstr * s;
+  if (n > PREVIEW) {
+    n = PREVIEW;
+    s = dynstr_substr_s(str, 0, PREVIEW-3);
+    dynstr_puts(s, "...");
+  } else {
+    s = dynstr_copy(str);
+  }
+  dynstr_replace_c(s, '\n', '/');
+
+  char * buff = malloc((256+n)*sizeof(char));
   assert(buff);
-  sprintf(buff, "DynString<\"%s\", [%lu, %lu]>", str->data, str->size, str->r_size);
+  sprintf(buff, "{\"%s\", %lu}", s->data, str->size);
+  dynstr_free(s);
   return buff;
 }
