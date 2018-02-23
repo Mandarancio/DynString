@@ -116,7 +116,9 @@ ds_bool  dyniter_next     (dyniter    *it);
 ds_bool  dyniter_at_end   (dyniter    *it);
 size_t   dyniter_skip     (dyniter    *it,
                            size_t      n);
-char*    dyniter_print    (dyniter     it);
 
+/** PRINT FUNCTIONS **/
+char*    dyniter_print    (dyniter     it);
+char*    dynstr_print     (dynstr     *str);
 #endif
 

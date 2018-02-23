@@ -76,7 +76,9 @@ Hi, how are you?Fine thanks, and you?I'm good! (46)
 
 ## Testing
 
-Test of the library have been implemented using [minunit](http://www.jera.com/techinfo/jtns/jtn002.html).
+Test of the library have been implemented using [check](https://libcheck.github.io/check/), \
+this library have to be installed to be able to compile and run the test,  however is not needed to use the library.
+
 To compile the tests:
 
 ```bash

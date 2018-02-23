@@ -15,12 +15,14 @@ test_srouces = [
   'test/test.c'
 ]
 
-deps = []
+deps = [
+  dependency('check')
+]
 
 shared_library(
     PROJECT_NAME,
     sources: [sources],
-    dependencies : deps,
+    dependencies : [],
     install: true
 )
 
@@ -29,5 +31,6 @@ executable(
     sources: [test_srouces, sources,],
     c_args: ['-I../'],
     dependencies : deps,
+    link_args: '-lcheck',
     install: false
 )
