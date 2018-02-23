@@ -1,5 +1,8 @@
 #include <check.h>
+#include <stdlib.h>
+
 #include "dynstring.h"
+
 
 START_TEST (test_from)
 {
@@ -27,29 +30,11 @@ START_TEST (test_puts_eq)
   dynstr * b = dynstr_new();
   dynstr_puts(b, text);
   ck_assert_str_eq(a->data, b->data);
-  dynstr_free(a);
-  dynstr_free(b);
-}
-END_TEST
-
-START_TEST(test_put_size)
-  const char text[128] = "hello world!";
-  dynstr * a = dynstr_from(text);
-  dynstr * b = dynstr_new();
-  dynstr_puts(b, text);
   ck_assert_int_eq(a->size, b->size);
-  dynstr_free(a);
-  dynstr_free(b);
-END_TEST
-
-START_TEST(test_put_buff)
-  const char text[128] = "hello world!";
-  dynstr * a = dynstr_from(text);
-  dynstr * b = dynstr_new();
-  dynstr_puts(b, text);
   ck_assert_int_eq(a->r_size, b->r_size);
   dynstr_free(a);
   dynstr_free(b);
+}
 END_TEST
 
 START_TEST(test_concat)
@@ -69,6 +54,146 @@ START_TEST(test_substr)
   dynstr_free(substr);
 END_TEST
 
+START_TEST(test_substr_2)
+  dynstr * var = dynstr_from("hello world!");
+  dynstr * substr = dynstr_substr_s(var, 6, 11);
+  ck_assert_str_eq(substr->data, "world");
+  dynstr_free(var);
+  dynstr_free(substr);
+END_TEST
+
+START_TEST(test_printf)
+  dynstr * t = dynstr_new();
+  dynstr_printf(t, "The answer is %d.", 42);
+  ck_assert_str_eq(t->data, "The answer is 42.");
+  dynstr_free(t);
+END_TEST
+
+START_TEST(test_printf_2)
+  dynstr * t = dynstr_new();
+  dynstr_printf(t, "The answer is 41.");
+  ck_assert_str_ne(t->data, "The answer is 42.");
+  dynstr_free(t);
+END_TEST
+
+START_TEST(test_iter)
+  dynstr * t = dynstr_from("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+  dyniter * i = dynstr_iter_at(t, 10);
+  ck_assert_int_eq(t->data[10], dyniter_at(*i));
+  dynstr_free(t);
+  dyniter_free(i);
+END_TEST
+
+START_TEST(test_iter_col)
+  dynstr * t = dynstr_from("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+  dyniter * i = dynstr_iter_at(t, 10);
+  ck_assert_int_eq(i->column, 10);
+  dynstr_free(t);
+  dyniter_free(i);
+END_TEST
+
+START_TEST(test_iter_line)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  dyniter * i = dynstr_iter_at(t, 15);
+  ck_assert_int_eq(i->line, 1);
+  dynstr_free(t);
+  dyniter_free(i);
+END_TEST
+
+START_TEST(test_iter_at_line)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  dyniter * i = dynstr_iter_line(t, 1);
+  ck_assert_int_eq(i->i, 12);
+  ck_assert_int_eq(i->line, 1);
+  ck_assert_int_eq(i->column, 0);
+  dynstr_free(t);
+  dyniter_free(i);
+END_TEST
+
+
+START_TEST(test_iter_at_wrong_line)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  dyniter * i = dynstr_iter_line(t, 2);
+  ck_assert_ptr_null(i);
+  dynstr_free(t);
+  dyniter_free(i);
+END_TEST
+
+
+START_TEST(test_match)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  dyniter * i = dynstr_match(t, "dolor", NULL);
+  ck_assert_ptr_nonnull(i);
+  ck_assert_int_eq(i->i, 13);
+  dyniter_free(i);
+  i = dynstr_match(t, "amen", NULL);
+  ck_assert_ptr_null(i);
+  i = dynstr_match(t, " ", NULL);
+  ck_assert_ptr_nonnull(i);
+  ck_assert_int_eq(i->i, 5);
+  dyniter_next(i);
+  dyniter * j = dynstr_match(t, " ", i);
+  ck_assert_ptr_nonnull(j);
+  ck_assert_int_eq(j->i, 12);
+  dyniter_free(j);
+  dyniter_free(i);
+  dynstr_free(t);
+END_TEST
+
+START_TEST(test_match_all)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  size_t n;
+  dyniter * res = dynstr_match_all(t, " ", &n);
+  ck_assert_ptr_nonnull(res);
+  ck_assert_int_eq(n , 7);
+  ck_assert_int_eq(res[0].i, 5);
+  ck_assert_int_eq(res[1].i, 12);
+  ck_assert_int_eq(res[2].i, 18);
+  free(res);
+  res = dynstr_match_all(t, "y", &n);
+  ck_assert_ptr_null(res);
+  ck_assert_int_eq(n, 0);
+
+  dynstr_free(t);
+END_TEST
+
+
+START_TEST(test_splits)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  size_t n;
+  dynstr ** res = dynstr_splitc(t, ' ', &n);
+  ck_assert_ptr_nonnull(res);
+  ck_assert_int_eq(n, 8);
+  ck_assert_str_eq(res[0]->data, "Lorem");
+  ck_assert_str_eq(res[7]->data, "elit.");
+  size_t i;
+  for (i = 0; i < n; i++)
+  {
+    dynstr_free(res[i]);
+  }
+  free(res);
+  res = dynstr_splits(t, " ", &n);
+  ck_assert_ptr_nonnull(res);
+  ck_assert_int_eq(n, 8);
+  ck_assert_str_eq(res[2]->data, "dolor");
+  ck_assert_str_eq(res[6]->data, "adipiscing");
+  for (i = 0; i < n; i++)
+  {
+    dynstr_free(res[i]);
+  }
+  free(res);
+  dynstr_free(t);
+END_TEST
+
+START_TEST(test_strip)
+  dynstr * t = dynstr_from("Lorem ipsum\n dolor sit amet, consectetur adipiscing elit.");
+  dynstr_strip(t, ' ');
+  ck_assert_ptr_nonnull(t);
+  ck_assert_str_eq(t->data, "Loremipsum\ndolorsitamet,consecteturadipiscingelit.");
+  dynstr_free(t);
+END_TEST
+
+
 Suite * basic_tests_suite(void)
 {
   Suite *s;
@@ -82,10 +207,22 @@ Suite * basic_tests_suite(void)
   tcase_add_test(tc_core, test_from);
   tcase_add_test(tc_core, test_buff_size);
   tcase_add_test(tc_core, test_puts_eq);
-  tcase_add_test(tc_core, test_put_size);
-  tcase_add_test(tc_core, test_put_buff);
   tcase_add_test(tc_core, test_concat);
   tcase_add_test(tc_core, test_substr);
+  tcase_add_test(tc_core, test_substr_2);
+  tcase_add_test(tc_core, test_printf);
+  tcase_add_test(tc_core, test_printf_2);
+
+  tcase_add_test(tc_core, test_iter);
+  tcase_add_test(tc_core, test_iter_col);
+  tcase_add_test(tc_core, test_iter_line);
+  tcase_add_test(tc_core, test_iter_at_line);
+  tcase_add_test(tc_core, test_iter_at_wrong_line);
+
+  tcase_add_test(tc_core, test_match);
+  tcase_add_test(tc_core, test_match_all);
+  tcase_add_test(tc_core, test_splits);
+  tcase_add_test(tc_core, test_strip);
 
   suite_add_tcase(s, tc_core);
 

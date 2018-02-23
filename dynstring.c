@@ -508,6 +508,8 @@ dynstr_iter_pos  (dynstr     *src,
 void
 dyniter_free     (dyniter    *iter)
 {
+  if (!iter)
+    return;
   iter->__src__  = NULL;
   free(iter);
 }
