@@ -703,6 +703,7 @@ dynstr_print     (dynstr     *str)
     s = dynstr_copy(str);
   }
   dynstr_replace_c(s, '\n', '/');
+  dynstr_replace_c(s, '\t', ' ');
 
   char * buff = malloc((256+n)*sizeof(char));
   assert(buff);
