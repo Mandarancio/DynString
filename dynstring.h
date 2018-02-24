@@ -120,7 +120,7 @@ ds_bool  dyniter_go_line  (dyniter    *it,
 ds_bool  dyniter_go_pos   (dyniter    *it,
                            size_t      line,
                            size_t      col);
-void     dyniter_end_line (dyniter    *it);
+ds_bool  dyniter_end_line (dyniter    *it);
 
 ds_bool  dyniter_next     (dyniter    *it);
 ds_bool  dyniter_prev     (dyniter    *it);

@@ -669,15 +669,15 @@ dyniter_go_pos   (dyniter    *it,
   return FALSE;
 }
 
-void
+ds_bool
 dyniter_end_line (dyniter    *it)
 {
   assert(it);
   do {
     if (dyniter_at(*it) == '\n')
-      return;
+      return TRUE;
   } while (dyniter_next(it));
-  return;
+  return FALSE;
 }
 
 char*
