@@ -27,6 +27,28 @@ enum ds_bool {
   TRUE  = 1
 } typedef ds_bool;
 
+enum exarity {
+  ONE,
+  MANY
+} typedef exarity;
+
+enum exmode {
+  POSITIVE,
+  NEGATIVE
+} typedef exmode;
+
+struct exrange {
+  char    start;
+  char    end;
+  exmode  mode;
+} typedef exrange;
+
+struct regex {
+  size_t   n;
+  exarity  arity;
+  exrange *ranges;
+} typedef  regex;
+
 /** constructors functions **/
 dynstr*  dynstr_new        (void);
 dynstr*  dynstr_new_size   (size_t      size);
@@ -72,9 +94,25 @@ int      dynstr_cmpr_at    (dynstr     *a,
 dyniter*  dynstr_match     (dynstr     *dst,
                             const char *exp,
                             dyniter    *iter);
-dyniter*  dynstr_match_all (dynstr     *str,
+dyniter* dynstr_match_in   (dynstr     *dst,
+                            const char *exp,
+                            dynrange    range);
+dyniter* dynstr_match_all  (dynstr     *str,
                             const char *exp,
                             size_t     *n);
+/** REGEX **/
+regex*   parse_regex       (const char *reg,
+                            size_t     *size);
+
+ds_bool  dynstr_exp        (dyniter     start,
+                            const char *regex,
+                            dyniter    *end);
+
+ds_bool  dynstr_regex      (dyniter     start,
+                            regex      *rules,
+                            size_t      n_rules,
+                            dyniter    *end);
+
 
 /** Extraction functions **/
 dynstr*  dynstr_substr     (dyniter     a,
@@ -131,5 +169,8 @@ size_t   dyniter_skip     (dyniter    *it,
 /** PRINT FUNCTIONS **/
 char*    dyniter_print    (dyniter     it);
 char*    dynstr_print     (dynstr     *str);
+
+void     print_range      (exrange     range);
+void     print_rule       (regex       rule);
 #endif
 
