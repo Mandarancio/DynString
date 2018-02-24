@@ -194,10 +194,49 @@ START_TEST(test_strip)
 END_TEST
 
 START_TEST(test_regex)
+  dyniter e;
   dynstr *t = dynstr_from("[^ref1]: Lorem ipsum\n");
   dyniter * i = dynstr_iter(t);
-  ds_bool r = dynstr_exp(*i, "[^(#!\\,&!])]: ", NULL);
+  ds_bool r = dynstr_exp(*i, "[^(#!\\,&!])]: ", &e);
+
   ck_assert_int_eq(r, TRUE);
+  ck_assert_int_eq(e.i, 8);
+
+  free(i);
+  dynstr_free(t);
+
+  t = dynstr_from("AbSZ");
+  i = dynstr_iter(t);
+
+
+  r = dynstr_exp(*i, "(#a:z,A:Z)", &e);
+
+  ck_assert_int_eq(r, TRUE);
+  ck_assert_int_eq(e.i, 3);
+
+  free(i);
+  dynstr_free(t);
+
+  t = dynstr_from("+39 348 2342312");
+  i = dynstr_iter(t);
+
+  r = dynstr_exp(*i, "(+,0)(#0:9)", &e);
+
+  ck_assert_int_eq(r, TRUE);
+  ck_assert_int_eq(e.i, 2);
+
+  free(i);
+  dynstr_free(t);
+
+  t = dynstr_from("| A | B |\n"
+                  "|---|--:|\n"
+                  "| C | D |\n");
+  i = dynstr_iter(t);
+  r = dynstr_exp(*i, "|(!|)(#!|)|(#!\n)\n"
+                     "|(#\\:,-)|(#!\n)\n", &e);
+  ck_assert_int_eq(r, TRUE);
+  ck_assert_int_eq(e.i, 19);
+
   free(i);
   dynstr_free(t);
 END_TEST

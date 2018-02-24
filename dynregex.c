@@ -104,7 +104,7 @@ parse_regex       (const char *reg,
             } else if (reg[i] == '*') {
               start = -128;
               end = 127;
-            }else if (reg[i] != '-' && reg[i] != '\\') {
+            }else if (reg[i] != ':' && reg[i] != '\\') {
               if (start == 0)
                 start = reg[i];
               else
