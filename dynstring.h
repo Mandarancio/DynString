@@ -32,15 +32,21 @@ enum exarity {
   MANY
 } typedef exarity;
 
-enum exmode {
+enum accmode {
+  OR,
+  AND
+} typedef accmode;
+
+enum exsign {
   POSITIVE,
   NEGATIVE
-} typedef exmode;
+} typedef exsign;
 
 struct exrange {
   char    start;
   char    end;
-  exmode  mode;
+  exsign  sign;
+  accmode mode;
 } typedef exrange;
 
 struct regex {

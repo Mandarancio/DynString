@@ -193,6 +193,15 @@ START_TEST(test_strip)
   dynstr_free(t);
 END_TEST
 
+START_TEST(test_regex)
+  dynstr *t = dynstr_from("[^ref1]: Lorem ipsum\n");
+  dyniter * i = dynstr_iter(t);
+  ds_bool r = dynstr_exp(*i, "[^(#!\\,&!])]: ", NULL);
+  ck_assert_int_eq(r, TRUE);
+  free(i);
+  dynstr_free(t);
+END_TEST
+
 
 Suite * basic_tests_suite(void)
 {
@@ -224,10 +233,12 @@ Suite * basic_tests_suite(void)
   tcase_add_test(tc_core, test_splits);
   tcase_add_test(tc_core, test_strip);
 
+  tcase_add_test(tc_core, test_regex);
   suite_add_tcase(s, tc_core);
 
   return s;
 }
+
 
 
 int main(void)

@@ -8,7 +8,8 @@ PROJECT_NAME = 'dynstring'
 TEST_NAME = 'test_dynstring'
 
 sources = [
-    'dynstring.c'
+    'dynstring.c',
+    'dynregex.c'
 ]
 
 test_srouces = [
